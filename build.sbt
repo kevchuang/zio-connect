@@ -95,6 +95,33 @@ lazy val couchbaseConnector = project
     Test / fork := true
   )
 
+lazy val elasticsearchConnector = project
+  .in(file("connectors/elasticsearch-connector"))
+  .settings(stdSettings("zio-connect-elasticsearch"))
+  .settings(
+    libraryDependencies ++= Seq(
+      ElasticsearchDependencies.`elastic4s-core`,
+      ElasticsearchDependencies.`elastic4s-json-zio`,
+      ElasticsearchDependencies.`zio-prelude`,
+      zio,
+      `zio-streams`,
+      `zio-test`,
+      `zio-test-sbt`
+    )
+  )
+  .settings(
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => Seq(`scala-compact-collection`)
+        case _                       => Seq.empty
+      }
+    }
+  )
+  .settings(
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    Test / fork := true
+  )
+
 lazy val fileConnector = project
   .in(file("connectors/file-connector"))
   .settings(stdSettings("zio-connect-file"))
