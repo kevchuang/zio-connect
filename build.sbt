@@ -35,7 +35,8 @@ lazy val root = project
     couchbaseConnector,
     fileConnector,
     fs2Connector,
-    s3Connector
+    s3Connector,
+    dynamodbConnector
   )
   .enablePlugins(BuildInfoPlugin)
   .enablePlugins(WebsitePlugin)
@@ -103,6 +104,34 @@ lazy val elasticsearchConnector = project
       ElasticsearchDependencies.`elastic4s-core`,
       ElasticsearchDependencies.`elastic4s-json-zio`,
       ElasticsearchDependencies.`zio-prelude`,
+      zio,
+      `zio-streams`,
+      `zio-test`,
+      `zio-test-sbt`
+    )
+  )
+  .settings(
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 12 => Seq(`scala-compact-collection`)
+        case _                       => Seq.empty
+      }
+    }
+  )
+  .settings(
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    Test / fork := true
+  )
+
+lazy val dynamodbConnector = project
+  .in(file("connectors/dynamodb-connector"))
+  .settings(stdSettings("zio-connect-dynamodb"))
+  .settings(
+    libraryDependencies ++= Seq(
+      DynamoDBDependencies.`aws-java-sdk-core`,
+      DynamoDBDependencies.`zio-aws-dynamodb`,
+      DynamoDBDependencies.`zio-aws-netty`,
+      DynamoDBDependencies.localstack,
       zio,
       `zio-streams`,
       `zio-test`,
@@ -250,13 +279,17 @@ lazy val fs2Connector = project
     Test / fork := true
   )
 
+/**
+ * Examples Submodules
+ */
+
 lazy val examples = project
   .in(file("examples"))
   .settings(
     publishArtifact := false,
     moduleName      := "zio-connect-examples"
   )
-  .aggregate(couchbaseConnectorExamples, fileConnectorExamples, s3ConnectorExamples)
+  .aggregate(couchbaseConnectorExamples, dynamodbConnectorExamples, fileConnectorExamples, s3ConnectorExamples)
 
 lazy val couchbaseConnectorExamples = project
   .in(file("examples/couchbase-connector-examples"))
@@ -268,6 +301,17 @@ lazy val couchbaseConnectorExamples = project
     )
   )
   .dependsOn(LocalProject("couchbaseConnector"))
+
+lazy val dynamodbConnectorExamples = project
+  .in(file("examples/dynamodb-connector-examples"))
+  .settings(
+    publish / skip := true,
+    scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies := Seq(
+      "dev.zio" %% "zio-aws-netty" % DynamoDBDependencies.zioAwsVersion
+    )
+  )
+  .dependsOn(LocalProject("dynamodbConnector"))
 
 lazy val fileConnectorExamples = project
   .in(file("examples/file-connector-examples"))
