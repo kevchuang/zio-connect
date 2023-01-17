@@ -101,7 +101,9 @@ lazy val elasticsearchConnector = project
   .settings(stdSettings("zio-connect-elasticsearch"))
   .settings(
     libraryDependencies ++= Seq(
+      ElasticsearchDependencies.`elastic4s-client-esjava`,
       ElasticsearchDependencies.`elastic4s-core`,
+      ElasticsearchDependencies.`elastic4s-effect-zio`,
       ElasticsearchDependencies.`elastic4s-json-zio`,
       ElasticsearchDependencies.`zio-prelude`,
       zio,
